@@ -186,7 +186,7 @@ export default function InteractiveAvatar() {
     });
     const { message } = await response.json();
 
-    setMessages([...messages, text]);
+    setMessages([...messages, text, message]);
 
     await avatar.current?.speak({
       text: message,
