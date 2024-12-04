@@ -26,6 +26,7 @@ const VoiceRecorder: FC<TextProps> = ({ onFinish }) => {
       recognitionInstance.lang = "en-US";
 
       recognitionInstance.onresult = (event) => {
+        console.log("Speech has been recognized");
         const interimTranscript = Array.from(event.results)
           .map((result) => result[0].transcript)
           .join(" ");
@@ -39,6 +40,7 @@ const VoiceRecorder: FC<TextProps> = ({ onFinish }) => {
       };
 
       recognitionInstance.onspeechend = () => {
+        console.log("Speech has stopped, checking for pause...");
         // Set a timeout to send text after a pause
         const timeout = setTimeout(() => {
           if (transcript.trim()) {
@@ -53,6 +55,7 @@ const VoiceRecorder: FC<TextProps> = ({ onFinish }) => {
       };
 
       recognitionInstance.onend = () => {
+        console.log("Recognition has ended");
         setListening(false);
       };
 
