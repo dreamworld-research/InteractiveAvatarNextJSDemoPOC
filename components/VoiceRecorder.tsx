@@ -21,9 +21,15 @@ const VoiceRecorder: FC<TextProps> = ({ onFinish }) => {
         window.SpeechRecognition || window.webkitSpeechRecognition;
       const recognitionInstance = new SpeechRecognition();
 
-      recognitionInstance.continuous = false;
+      recognitionInstance.continuous = true;
       recognitionInstance.interimResults = true;
       recognitionInstance.lang = "en-US";
+
+      console.log(recognitionInstance);
+
+      recognitionInstance.onstart = () => {
+        console.log("Recognition has started");
+      };
 
       recognitionInstance.onresult = (event) => {
         console.log("Speech has been recognized");
@@ -39,21 +45,6 @@ const VoiceRecorder: FC<TextProps> = ({ onFinish }) => {
         }
       };
 
-      recognitionInstance.onspeechend = () => {
-        console.log("Speech has stopped, checking for pause...");
-        // Set a timeout to send text after a pause
-        const timeout = setTimeout(() => {
-          if (transcript.trim()) {
-            recognitionInstance.stop();
-            setListening(false);
-            onFinish(transcript);
-            setTranscript("");
-          }
-        }, 1500); // Adjust this value as needed for desired pause duration
-
-        setPauseTimeout(timeout);
-      };
-
       recognitionInstance.onend = () => {
         console.log("Recognition has ended");
         setListening(false);
@@ -61,10 +52,11 @@ const VoiceRecorder: FC<TextProps> = ({ onFinish }) => {
 
       setRecognition(recognitionInstance);
     }
-  }, [pauseTimeout, transcript, onFinish]);
+  }, [pauseTimeout, onFinish]);
 
   const handleStart = () => {
     if (recognition) {
+      console.log("triggered");
       setListening(true);
       recognition.start();
     }
