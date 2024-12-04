@@ -18,5 +18,6 @@ export async function POST(req: Request) {
     })),
   });
 
+  // @ts-expect-error: Type error: Property 'json' does not exist on type
   return Response.json({ message: result.text });
 }
