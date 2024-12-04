@@ -13,7 +13,6 @@ const VoiceRecorder: FC<TextProps> = ({ onFinish }) => {
   const [recognition, setRecognition] = useState<SpeechRecognition | null>(
     null
   );
-  const [pauseTimeout, setPauseTimeout] = useState<number | null>(null);
 
   useEffect(() => {
     if ("webkitSpeechRecognition" in window || "SpeechRecognition" in window) {
@@ -38,11 +37,6 @@ const VoiceRecorder: FC<TextProps> = ({ onFinish }) => {
           .join(" ");
 
         setTranscript(interimTranscript);
-
-        // Clear any existing timeout if user resumes speaking
-        if (pauseTimeout) {
-          clearTimeout(pauseTimeout);
-        }
       };
 
       recognitionInstance.onend = () => {
@@ -65,9 +59,6 @@ const VoiceRecorder: FC<TextProps> = ({ onFinish }) => {
   const handleStop = () => {
     if (recognition) {
       recognition.stop();
-      if (pauseTimeout) {
-        clearTimeout(pauseTimeout);
-      }
       if (transcript.trim()) {
         onFinish(transcript);
         setTranscript("");

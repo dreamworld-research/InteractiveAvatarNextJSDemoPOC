@@ -115,17 +115,17 @@ export default function InteractiveAvatar() {
   async function handleVoiceChange(text: string) {
     setText(text);
     if (text) {
-      await handleSpeak();
+      handleSpeak(text);
     }
   }
-  async function handleSpeak() {
+  async function handleSpeak(yo?: string) {
     setIsLoadingRepeat(true);
     if (!avatar.current) {
       setDebug("Avatar API not initialized");
 
       return;
     }
-    await getResponse(text);
+    await getResponse(yo ?? text);
     setIsLoadingRepeat(false);
   }
   async function handleInterrupt() {
