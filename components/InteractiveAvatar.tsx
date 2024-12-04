@@ -2,7 +2,10 @@ import type { StartAvatarResponse } from "@heygen/streaming-avatar";
 
 import StreamingAvatar, {
   AvatarQuality,
-  StreamingEvents, TaskMode, TaskType, VoiceEmotion,
+  StreamingEvents,
+  TaskMode,
+  TaskType,
+  VoiceEmotion,
 } from "@heygen/streaming-avatar";
 import {
   Button,
@@ -22,8 +25,9 @@ import { useEffect, useRef, useState } from "react";
 import { useMemoizedFn, usePrevious } from "ahooks";
 
 import InteractiveAvatarTextInput from "./InteractiveAvatarTextInput";
+import VoiceRecorder from "./VoiceRecorder";
 
-import {AVATARS, STT_LANGUAGE_LIST} from "@/app/lib/constants";
+import { AVATARS, STT_LANGUAGE_LIST } from "@/app/lib/constants";
 
 export default function InteractiveAvatar() {
   const [isLoadingSession, setIsLoadingSession] = useState(false);
@@ -32,7 +36,7 @@ export default function InteractiveAvatar() {
   const [debug, setDebug] = useState<string>();
   const [knowledgeId, setKnowledgeId] = useState<string>("");
   const [avatarId, setAvatarId] = useState<string>("");
-  const [language, setLanguage] = useState<string>('en');
+  const [language, setLanguage] = useState<string>("en");
 
   const [data, setData] = useState<StartAvatarResponse>();
   const [text, setText] = useState<string>("");
@@ -40,6 +44,7 @@ export default function InteractiveAvatar() {
   const avatar = useRef<StreamingAvatar | null>(null);
   const [chatMode, setChatMode] = useState("text_mode");
   const [isUserTalking, setIsUserTalking] = useState(false);
+  const [messages, setMessages] = useState<string[]>([]);
 
   async function fetchAccessToken() {
     try {
@@ -93,7 +98,7 @@ export default function InteractiveAvatar() {
         avatarName: avatarId,
         knowledgeId: knowledgeId, // Or use a custom `knowledgeBase`.
         voice: {
-          rate: 1.5, // 0.5 ~ 1.5
+          rate: 1,
           emotion: VoiceEmotion.EXCITED,
         },
         language: language,
@@ -101,15 +106,17 @@ export default function InteractiveAvatar() {
       });
 
       setData(res);
-      // default to voice mode
-      await avatar.current?.startVoiceChat({
-        useSilencePrompt: false
-      });
       setChatMode("voice_mode");
     } catch (error) {
       console.error("Error starting avatar session:", error);
     } finally {
       setIsLoadingSession(false);
+    }
+  }
+  async function handleVoiceChange(text: string) {
+    setText(text);
+    if (text) {
+      await handleSpeak();
     }
   }
   async function handleSpeak() {
@@ -119,10 +126,7 @@ export default function InteractiveAvatar() {
 
       return;
     }
-    // speak({ text: text, task_type: TaskType.REPEAT })
-    await avatar.current.speak({ text: text, taskType: TaskType.REPEAT, taskMode: TaskMode.SYNC }).catch((e) => {
-      setDebug(e.message);
-    });
+    await getResponse(text);
     setIsLoadingRepeat(false);
   }
   async function handleInterrupt() {
@@ -131,11 +135,9 @@ export default function InteractiveAvatar() {
 
       return;
     }
-    await avatar.current
-      .interrupt()
-      .catch((e) => {
-        setDebug(e.message);
-      });
+    await avatar.current.interrupt().catch((e) => {
+      setDebug(e.message);
+    });
   }
   async function endSession() {
     await avatar.current?.stopAvatar();
@@ -146,15 +148,11 @@ export default function InteractiveAvatar() {
     if (v === chatMode) {
       return;
     }
-    if (v === "text_mode") {
-      avatar.current?.closeVoiceChat();
-    } else {
-      await avatar.current?.startVoiceChat();
-    }
     setChatMode(v);
   });
 
   const previousText = usePrevious(text);
+
   useEffect(() => {
     if (!previousText && text) {
       avatar.current?.startListening();
@@ -178,6 +176,26 @@ export default function InteractiveAvatar() {
       };
     }
   }, [mediaStream, stream]);
+
+  const getResponse = async (text: string) => {
+    const response = await fetch("/api/chat", {
+      method: "POST",
+      body: JSON.stringify({
+        messages: [...messages, text],
+      }),
+    });
+    const { message } = await response.json();
+
+    setMessages([...messages, text]);
+
+    await avatar.current?.speak({
+      text: message,
+      taskType: TaskType.REPEAT,
+      taskMode: TaskMode.SYNC,
+    });
+
+    return data;
+  };
 
   return (
     <div className="w-full flex flex-col gap-4">
@@ -252,18 +270,16 @@ export default function InteractiveAvatar() {
                   ))}
                 </Select>
                 <Select
+                  className="max-w-xs"
                   label="Select language"
                   placeholder="Select language"
-                  className="max-w-xs"
                   selectedKeys={[language]}
                   onChange={(e) => {
                     setLanguage(e.target.value);
                   }}
                 >
                   {STT_LANGUAGE_LIST.map((lang) => (
-                    <SelectItem key={lang.key}>
-                      {lang.label}
-                    </SelectItem>
+                    <SelectItem key={lang.key}>{lang.label}</SelectItem>
                   ))}
                 </Select>
               </div>
@@ -309,14 +325,7 @@ export default function InteractiveAvatar() {
             </div>
           ) : (
             <div className="w-full text-center">
-              <Button
-                isDisabled={!isUserTalking}
-                className="bg-gradient-to-tr from-indigo-500 to-indigo-300 text-white"
-                size="md"
-                variant="shadow"
-              >
-                {isUserTalking ? "Listening" : "Voice chat"}
-              </Button>
+              <VoiceRecorder onFinish={handleVoiceChange} />
             </div>
           )}
         </CardFooter>
