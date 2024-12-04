@@ -106,7 +106,6 @@ export default function InteractiveAvatar() {
       });
 
       setData(res);
-      setChatMode("voice_mode");
     } catch (error) {
       console.error("Error starting avatar session:", error);
     } finally {
