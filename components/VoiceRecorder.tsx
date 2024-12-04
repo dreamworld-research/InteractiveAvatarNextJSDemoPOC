@@ -1,4 +1,3 @@
-//@ts-nocheck
 "use client";
 import { FC, useEffect, useState } from "react";
 import { Button } from "@nextui-org/react";
@@ -46,7 +45,7 @@ const VoiceRecorder: FC<TextProps> = ({ onFinish }) => {
 
       setRecognition(recognitionInstance);
     }
-  }, [pauseTimeout, onFinish]);
+  }, [onFinish]);
 
   const handleStart = () => {
     if (recognition) {
